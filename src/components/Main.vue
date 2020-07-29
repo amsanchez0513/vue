@@ -63,9 +63,8 @@ export default {
           totalArticle: category.totalArticle
       };
 
-      bus.$emit('categoryValues', this.category);
-      bus.$emit('switchComp', currentComp);
-      console.log(this.category);
+      bus.$emit('switchComp', {"component" : currentComp, "category" : this.category } );
+      
     }
   },
   computed:{

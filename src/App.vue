@@ -6,8 +6,7 @@
 		</div>
 		<br>
 		<div id="bottom-div">
-			
-			<component :is="currentComp"></component>
+			<component :is="currentComp" :category="currentProps"></component>
 		</div>
 	</div>
 </template>
@@ -21,23 +20,25 @@ import { bus } from './app.js';
 
 import axios from "axios";
 export default {
-  data() {
-    return {
-      currentComp: 'tawk-main'
-    };
-  },
-
-  created() {
-      bus.$on('switchComp', comp => {
-           this.currentComp = comp;
-      })
-  },
+  	data() {
+    	return {
+			currentComp: 'tawk-main',
+			currentProps : ''
+    	};
+  	},
+  	created() {
+      	bus.$on('switchComp', (comp) => {
+			this.currentComp = comp.component;
+			if (this.currentComp === 'tawk-category') {
+				this.currentProps = comp.category 
+			}		
+		})	
+	},
 	components:{
 		'tawk-header': Header,
 		'tawk-search': Search,
 		'tawk-main': Main,
 		'tawk-category': Category
-
 	}
 	
 }
@@ -58,8 +59,6 @@ export default {
 
 #bottom-div{
 	background-color: #fafafa;
-	height: 50%;
 	width: 100%;
-	margin: auto;
 }
 </style>

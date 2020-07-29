@@ -1,13 +1,15 @@
 <template id="cat">
   
   <div id="category">
-     <ul class="breadcrumb">
-      <li><a href="#" @click="switchComponent('tawk-main')">All categories</a></li>
-      <li ></li>
-     </ul>
     <div id="body-container">
+    <ul class="breadcrumb">
+      <li><a href="#" @click="changeComponent('tawk-main')">All categories</a></li>
+      <li>{{title}}</li>
+     </ul>
+     <br>
       <div id="body-left">
         <div class="card">
+          <i class="fa fa-file-alt">&nbsp;{{totalArticle}}</i>
           <div id="top">
             <i v-bind:class="'fa fa-'+icon+''"></i>
             <p class="title">{{title}}</p>
@@ -32,7 +34,22 @@
         </div>
       </div>
     </div>
-     
+    <div id="other">
+      <h5>Other Categories</h5>
+      <div class="wrapper2">
+
+      <button @click="page--" v-if="page != 1"> < </button>
+      <div class="card2" v-for="cat in paginate(categories)">
+        <a @click="changeComponent('tawk-category', category)">
+          <i v-bind:class="'fa fa-'+cat.icon+''"></i>
+          <p class="title">{{cat.title}}</p>
+          <small class="totalArticle">{{cat.totalArticle}} articles</small>
+          <small>Updated on {{cat.updatedOn}}</small>
+        </a>
+      </div>
+      <button @click="page++"  v-if="page != 2"> > </button>
+    </div>
+    </div>
   </div>
 </template>
 
@@ -45,11 +62,19 @@ import Main from './Main.vue'
 import { bus } from '../app.js';
 
 Vue.use(VueAxios, axios)
-export default {
+export default {  
+  props: {
+    category: {
+      type: Object,
+      default: null
+    }
+  },
   name:'Category',
   data: function() {
     return {
+      categories: [],
       articles: [],
+      cat: [],
       id: "",
       title: "",
       description: "",
@@ -57,24 +82,23 @@ export default {
       enabled: "",
       order: "",
       icon: "",
-      totalArticle: ""
+      totalArticle: "",
+      currentCategory: "",
+      page: 1,
+      perPage: 3,
+      pages: []
     };
   },
   created(){
-    let self = this
-
-     bus.$on('categoryValues', (category) => {
-      this.id = category.id;
-      this.title = category.title;
-      this.description = category.description;
-      this.updatedOn = category.updatedOn;
-      this.enabled = category.enabled;
-      this.order = category.order;
-      this.icon = category.icon;
-      this.totalArticle = category.totalArticle;
-
-      console.log("title: "+this.title);
-    })
+    this.id = this.category.id
+    this.id = this.category.id;
+    this.title = this.category.title;
+    this.description = this.category.description;
+    this.updatedOn = this.category.updatedOn;
+    this.enabled = this.category.enabled;
+    this.order = this.category.order;
+    this.icon = this.category.icon;
+    this.totalArticle = this.category.totalArticle;
   },
   methods: {
     filterItems: function(filteredArticles) {
@@ -82,13 +106,72 @@ export default {
         return item.status == 'published';
       })
     },
-    switchComponent: function(currentComp) {
-       bus.$emit('switchComp', currentComp);
+    switchComponent: function(currentComp, category) {
+      this.category={
+          id: category.id,
+          title: category.title,
+          description: category.description,
+          updatedOn: category.updatedOn,
+          enabled: category.enabled,
+          order: category.order,
+          icon: category.icon,
+          totalArticle: category.totalArticle
+      };
+
+      bus.$emit('switchComp', {"component" : currentComp, "category" : this.category } );
+    },
+    changeComponent: function(currentComp) {
+      this.category={
+          id: category.id,
+          title: category.title,
+          description: category.description,
+          updatedOn: category.updatedOn,
+          enabled: category.enabled,
+          order: category.order,
+          icon: category.icon,
+          totalArticle: category.totalArticle
+      };
+
+      bus.$emit('switchComp', {"component" : currentComp, "category" : this.category } );
+    },
+    filterCategories: function(filteredCategories) {
+      return filteredCategories.filter(function(item) {
+        return item.enabled == true;
+
+      })
+    },
+    setPages () {
+      let numberOfPages = Math.ceil(this.categories.length / this.perPage);
+      for (let index = 1; index <= numberOfPages; index++) {
+        this.pages.push(index);
+      }
+      
+    },
+    paginate (categories) {
+      let page = this.page;
+      let perPage = this.perPage;
+      let from = (page * perPage) - perPage;
+      let to = (page * perPage);
+
+
+      for (let i = 0; i < categories.length; i++) {
+        if(categories[i].enabled == false){
+          categories.splice(i, 1);
+        }if(categories[i].title == this.title){
+          categories.splice(i, 1);
+        }
+      }
+      return categories.slice(from, to);
     }
   },
   mounted() {
     axios.get("http://localhost:9000/api/category/"+this.id).then(response => {
       this.articles = response.data
+    }),
+
+     axios.get("http://localhost:9000/api/categories").then(response => {
+      //console.log(  response.data);
+      this.categories = response.data
     })
     
   }
@@ -99,37 +182,46 @@ export default {
   @import '../scss/main.scss';
 
   #category{
-    background-color: #666;
     padding: 10px;
-    text-align: center;
     width: 100%;
     background-color: #fafafa;
+    height: 920px;
   }
   #body-container{
-    float: left;
-    width: 100%;
+    height: 900px;
+    width: 80%;
     background: #fafafa;
+    margin-left: 20%;
   }
   #body-left{
-    padding: 0;
+    width: 25%;
     float: left;
   }
   #body-right{
-    padding: 20px;
     width: 70%;
     float: right;
-    background-color: #fafafa;
   }
-
   #body-right:after {
     content: "";
     display: table;
     clear: both;
   }
+  #other{
+    padding: 0;
+    margin: 0;
+    border-top: 2px solid #ededed;
+    align-items: center;
+    text-align: center;
+    background-color: #fafafa;
+    h5{
+      padding: 30px;
+      color: #9c9aa6;
+    }
+  }
 
   #articles{
     box-shadow: rgba(0, 0, 0, 0.117647) 0px 1px 6px, rgba(0, 0, 0, 0.117647) 0px 1px 4px;
-    width: 100%;
+    width: 80%;
     margin: 12px;
     padding: 10px; 
     text-decoration: none;
@@ -146,7 +238,7 @@ export default {
   #article{
       text-decoration: none;
       font-size: 14px;
-      width: 90%;
+      width: 100%;
       padding: 10px;
       i{
         float: left;
@@ -175,6 +267,20 @@ export default {
       }
   }
 
+  button {
+      float: left;
+      width: 50px;
+      padding: 10px;
+      background: #fafafa;
+      color: #a5a4ae;
+      font-size: 20px;
+      border: 1px solid #eeeeee;
+      border-top-right-radius: 4px;
+      border-bottom-right-radius: 4px;
+      border-left: none; /* Prevent double borders */
+      cursor: pointer;
+    }
+
   .card {
     box-shadow: rgba(0, 0, 0, 0.117647) 0px 1px 6px, rgba(0, 0, 0, 0.117647) 0px 1px 4px;
     margin: 12px;
@@ -182,41 +288,46 @@ export default {
     text-decoration: none;
     font-size: 24px;
     display: flex;
-    flex-direction: column;
-    align-items: center;
 
+    i{
+      float: right;
+      color: #03a84e;
+      font-size: 15px;
+    }
     #bottom{
       width: 100%;
       border-top: 1px solid #dfdfdf;
       padding: 10px; 
       text-decoration: none;
-      font-size: 24px;
+      font-size: 12px;
       display: flex;
       flex-direction: column;
       align-items: center;
+      text-align:center;
       i{
-        padding: 20px;
+        padding: 10px;
         color: #03a84e;
         font-size: 20px;
       }
+
     }
     #top{
       padding: 10px; 
       text-decoration: none;
-      font-size: 24px;
+      font-size: 14px;
       display: flex;
       flex-direction: column;
       align-items: center;
       i{
         padding: 20px;
         color: #03a84e;
-        font-size: 40px;
+        font-size: 30px;
       }
 
       .title{
         font-weight: bold;
         color: #373737;
-        font-size: 20px;
+        font-size: 14px;
         width: 100%;
         text-align: center;
       }
@@ -227,7 +338,57 @@ export default {
     }
   }
 
-    ul.breadcrumb {
+  .wrapper2 {
+    display: flex;
+    margin-left: 10%;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .card2 {
+    background: #ffffff;
+    box-shadow: rgba(0, 0, 0, 0.117647) 0px 1px 6px, rgba(0, 0, 0, 0.117647) 0px 1px 4px;
+    width: 25%;
+    margin: 12px;
+    padding: 10px;
+    transition: .15s all ease-in-out;
+    &:hover {
+      transform: scale(1.1);
+    }
+   
+    a {
+      text-decoration: none;
+      padding: 12px;
+      font-size: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+
+      i{
+        padding: 20px;
+        color: #03a84e;
+        font-size: 40px;
+      }
+
+      .title{
+        font-weight: bold;
+        color: #373737;
+        font-size: 14px;
+        width: 100%;
+        text-align: center;
+      }
+      .totalArticle{
+        color: #03a84e;
+        font-size: 12px;
+      }
+      small {
+        color: #9c9aa6;
+        font-size: 10px;
+      }
+    }
+  }
+
+  ul.breadcrumb {
     padding: 10px 16px;
     list-style: none;
     background-color: #fafafa;
